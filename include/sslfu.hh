@@ -57,6 +57,12 @@ namespace sslfu {
         biobuf() { /* empty */ };
         biobuf(const biobuf&) = delete;
         biobuf& operator=(const biobuf&) = delete;
+        ~biobuf() { close(); };
+
+        void close() {
+          BIO_free_all(_bio);
+          _bio = 0;
+        };
 
         BIO* bio() const { return _bio; };
         BIO* bio(BIO* b) { return _bio = b; };
@@ -183,6 +189,10 @@ namespace sslfu {
       clientstream(const std::string& hostname, const std::string& port)
           : clientstream() {
         connect(hostname, port);
+      };
+
+      ~clientstream() {
+        SSL_CTX_free(_ctx);
       };
 
       void CAfile (const std::string&& val) { _CAfile = val; };
