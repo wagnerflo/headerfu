@@ -37,10 +37,23 @@ namespace sysfu {
       return done;
     };
 
-    inline void closefd(int fd) {
-      if (::close(fd))
-        throw std::system_error(errno, std::generic_category());
-    };
+  };
+
+  void closefd(int fd) {
+    if (::close(fd))
+      throw std::system_error(errno, std::generic_category());
+  };
+
+  FILE* openfd(int fd, const char* mode) {
+    FILE* fp = ::fdopen(fd, mode);
+    if (!fp)
+      throw std::system_error(errno, std::generic_category());
+    return fp;
+  };
+
+  void seekfd(int fd, off_t offset, int whence = SEEK_SET) {
+    if (::lseek(fd, offset, whence) == -1)
+      throw std::system_error(errno, std::generic_category());
   };
 
   class fdbuf : public std::streambuf {
@@ -49,7 +62,7 @@ namespace sysfu {
 
     public:
       fdbuf(int fd) : _fd(fd) { /* empty */ };
-      void close() { detail::closefd(_fd); };
+      void close() { closefd(_fd); };
       int fileno() const { return _fd; };
 
     protected:
@@ -124,8 +137,8 @@ namespace sysfu {
         if (!is_created())
           throw std::runtime_error("create first");
         ::dup2(RE, STDIN_FILENO);
-        detail::closefd(WE);
-        detail::closefd(RE);
+        closefd(WE);
+        closefd(RE);
         WE = -1;
         RE = -1;
       };
@@ -136,7 +149,7 @@ namespace sysfu {
         if (RE == -1)
           throw std::runtime_error("already writing");
         if (WE != -1) {
-          detail::closefd(WE);
+          closefd(WE);
           WE = -1;
         }
         return fdistream(RE);
@@ -148,7 +161,7 @@ namespace sysfu {
         if (WE == -1)
           throw std::runtime_error("already reading");
         if (RE != -1) {
-          detail::closefd(RE);
+          closefd(RE);
           RE = -1;
         }
         return fdostream(WE);
@@ -156,11 +169,11 @@ namespace sysfu {
 
       void close() {
         if (RE != -1) {
-          detail::closefd(RE);
+          closefd(RE);
           RE = -1;
         }
         if (WE != -1) {
-          detail::closefd(WE);
+          closefd(WE);
           WE = -1;
         }
       }
