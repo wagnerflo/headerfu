@@ -51,20 +51,20 @@ namespace sslfu {
 
     class biobuf : public std::streambuf {
       protected:
-        BIO* m_bio = 0;
+        BIO* _bio = 0;
 
       public:
         biobuf() { /* empty */ };
         biobuf(const biobuf&) = delete;
         biobuf& operator=(const biobuf&) = delete;
 
-        BIO* bio() const { return m_bio; };
-        BIO* bio(BIO* b) { return m_bio = b; };
+        BIO* bio() const { return _bio; };
+        BIO* bio(BIO* b) { return _bio = b; };
 
       protected:
         // writing
         std::streamsize xsputn (const char* s, std::streamsize n) {
-          return detail::looprw("write", &BIO_write, m_bio, s, n);
+          return detail::looprw("write", &BIO_write, _bio, s, n);
         };
 
         int_type overflow (int_type c) {
@@ -76,7 +76,7 @@ namespace sslfu {
 
         // reading
         std::streamsize xsgetn (char* s, std::streamsize n) {
-          return detail::looprw("read", &BIO_read, m_bio, s, n);
+          return detail::looprw("read", &BIO_read, _bio, s, n);
         };
 
         int_type underflow () {
