@@ -98,22 +98,25 @@ namespace sslfu {
       class queue_item {
         public:
           const unsigned long code;
-          const std::string lib;
-          const std::string func;
-          const std::string reason;
-          const std::string what_str;
+          const char* lib;
+          const char* func;
+          const char* reason;
 
           queue_item(const unsigned long& c)
-                : code(c),
-                  lib(ERR_lib_error_string(c)),
-                  func(ERR_func_error_string(c)),
-                  reason(ERR_reason_error_string(c)),
-                  what_str(func + " in " + lib + ": " + reason) {
+            : code(c),
+              lib(ERR_lib_error_string(c)),
+              func(ERR_func_error_string(c)),
+              reason(ERR_reason_error_string(c)) {
             /* empty */
           };
 
-          const std::string& what() const {
-            return what_str;
+          const std::string what() const {
+            std::string ret;
+            if (func) {
+              ret += func;
+              ret += " ";
+            }
+            return ret + "in " + lib + ": " + reason;
           };
       };
       const std::vector<queue_item> queue;
@@ -124,9 +127,9 @@ namespace sslfu {
         /* empty */
       };
 
-      const std::string construct_what
+      static const std::string construct_what
           (const std::string& w,
-           const std::vector<queue_item>& q) const {
+           const std::vector<queue_item>& q) {
         std::string what_arg = w;
         for (auto item : q) {
           what_arg += "\n    " + item.what();
