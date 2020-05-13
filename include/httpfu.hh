@@ -62,7 +62,8 @@ namespace httpfu {
         if (pos == std::string::npos)
           throw std::runtime_error("Invalid status line");
 
-        if (line.substr(0, pos) != "HTTP/1.1")
+        if (line.substr(0, pos) != "HTTP/1.0" &&
+            line.substr(0, pos) != "HTTP/1.1")
           throw std::runtime_error(
             "Unsupported HTTP version: " + line.substr(0, pos));
 
