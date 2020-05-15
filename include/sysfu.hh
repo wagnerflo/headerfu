@@ -39,21 +39,33 @@ namespace sysfu {
 
   };
 
-  void closefd(int fd) {
-    if (::close(fd))
-      throw std::system_error(errno, std::generic_category());
-  };
+  namespace file {
+    FILE* open(int fd, const char* mode) {
+      FILE* fp = ::fdopen(fd, mode);
+      if (!fp)
+        throw std::system_error(errno, std::generic_category());
+      return fp;
+    };
 
-  FILE* openfd(int fd, const char* mode) {
-    FILE* fp = ::fdopen(fd, mode);
-    if (!fp)
-      throw std::system_error(errno, std::generic_category());
-    return fp;
-  };
+    void close(int fd) {
+      if (::close(fd))
+        throw std::system_error(errno, std::generic_category());
+    };
 
-  void seekfd(int fd, off_t offset, int whence = SEEK_SET) {
-    if (::lseek(fd, offset, whence) == -1)
-      throw std::system_error(errno, std::generic_category());
+    void close(FILE* fp) {
+      if (::fclose(fp))
+        throw std::system_error(errno, std::generic_category());
+    };
+
+    void seek(int fd, off_t offset, int whence = SEEK_SET) {
+      if (::lseek(fd, offset, whence) == -1)
+        throw std::system_error(errno, std::generic_category());
+    };
+
+    void seek(FILE* fp, long offset, int whence = SEEK_SET) {
+      if (::fseek(fp, offset, whence) == -1)
+        throw std::system_error(errno, std::generic_category());
+    };
   };
 
   class fdbuf : public std::streambuf {
@@ -62,7 +74,7 @@ namespace sysfu {
 
     public:
       fdbuf(int fd) : _fd(fd) { /* empty */ };
-      void close() { closefd(_fd); };
+      void close() { file::close(_fd); };
       int fileno() const { return _fd; };
 
     protected:
@@ -137,8 +149,8 @@ namespace sysfu {
         if (!is_created())
           throw std::runtime_error("create first");
         ::dup2(RE, STDIN_FILENO);
-        closefd(WE);
-        closefd(RE);
+        file::close(WE);
+        file::close(RE);
         WE = -1;
         RE = -1;
       };
@@ -149,7 +161,7 @@ namespace sysfu {
         if (RE == -1)
           throw std::runtime_error("already writing");
         if (WE != -1) {
-          closefd(WE);
+          file::close(WE);
           WE = -1;
         }
         return fdistream(RE);
@@ -161,7 +173,7 @@ namespace sysfu {
         if (WE == -1)
           throw std::runtime_error("already reading");
         if (RE != -1) {
-          closefd(RE);
+          file::close(RE);
           RE = -1;
         }
         return fdostream(WE);
@@ -169,11 +181,11 @@ namespace sysfu {
 
       void close() {
         if (RE != -1) {
-          closefd(RE);
+          file::close(RE);
           RE = -1;
         }
         if (WE != -1) {
-          closefd(WE);
+          file::close(WE);
           WE = -1;
         }
       }
