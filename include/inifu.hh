@@ -21,32 +21,6 @@
 
 namespace inifu {
   namespace detail {
-    inline bool split(const std::string& in, const std::string& sep,
-                      std::string& first, std::string& second) {
-      size_t pos = in.find(sep);
-
-      if(pos == std::string::npos)
-        return false;
-
-      first = in.substr(0, pos);
-      second = in.substr(pos + sep.size(), in.size() - pos - sep.size());
-
-      return true;
-    }
-
-    inline std::string trim(const std::string& str,
-                            const std::string& whitespace = " \t\n\r\f\v") {
-      size_t startpos = str.find_first_not_of(whitespace);
-      size_t endpos = str.find_last_not_of(whitespace);
-
-      // only whitespace, return empty
-      if(startpos == std::string::npos || endpos == std::string::npos)
-        return "";
-
-      // trim leading and trailing whitespace
-      return str.substr(startpos, endpos - startpos + 1);
-    }
-
     template<typename T>
     void assign(T& dest, const std::string& value) {
       dest = value;
@@ -58,8 +32,7 @@ namespace inifu {
     }
   }
 
-  class syntax_error : public std::runtime_error
-  {
+  class syntax_error : public std::runtime_error {
     public:
       syntax_error(const std::string& msg)
         : std::runtime_error(msg) {
@@ -69,32 +42,24 @@ namespace inifu {
 
   template<typename T> class bind {
     protected:
-      const std::string match_section;
-      const std::string match_key;
+      const std::string key;
       T& dest;
 
     public:
-      bind(const std::string& ms, const std::string& mk, T& d)
-        : match_section(ms), match_key(mk), dest(d) {
+      bind(const std::string& k, T& d) : key(k), dest(d) {
         /* empty */
       }
 
-      bind(const std::string& mk, T& d)
-        : match_key(mk), dest(d) {
-        /* empty */
-      }
-
-      void operator()(const std::string& section,
-                      const std::string& key,
+      void operator()(const std::string& key,
                       const std::string& value) const {
-        if (section == match_section && key == match_key)
+        if (key == this->key)
           detail::assign(dest, value);
       }
   };
 
-  template <typename... F>
+  template<typename... F>
   void parse(std::istream&& infile, F&&... funcs) {
-    std::string line, section, key, value;
+    std::string line, key, value;
 
     while(std::getline(infile, line)) {
       // trim line
@@ -104,22 +69,21 @@ namespace inifu {
       if(line.empty() || line[0] == '#')
         continue;
 
-      // section
-      if(line[0] == '[') {
-        if(line[line.size() - 1] != ']')
-          throw syntax_error(
-            "Section line '" + line + "' is missing closing bracket.");
-
-        section = detail::trim(line.substr(1, line.size() - 2));
-        continue;
-      }
-
-      // entry: split by "=", trim and set
+      // split by "="
       if(!detail::split(line, "=", key, value))
         throw syntax_error(
-          "Entry line '" + line + "' is missing equal sign.");
+          "Line '" + line + "' is missing equal sign.");
 
-      key = detail::trim(key);
+      // ...
+      if (k.find_first_not_of(detail::header_key) != std::string::npos)
+        throw std::runtime_error("Invalid charakter in header key");
+
+      // quoted?
+      if (value[0] == '"') {
+
+      }
+      // else if (value.find
+      
       value = detail::trim(value);
 
       // run std::invoke over C++17 folded Callables
