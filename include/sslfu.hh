@@ -24,6 +24,7 @@
 #include <openssl/ssl.h>
 #include <openssl/conf.h>
 #include <openssl/err.h>
+#include <openssl/x509v3.h>
 
 namespace sslfu {
 
@@ -181,12 +182,6 @@ namespace sslfu {
         }
         return c;
       };
-  };
-
-  void init() {
-    SSL_library_init();
-    SSL_load_error_strings();
-    OPENSSL_config(0);
   };
 
   class clientstream : public std::iostream {
